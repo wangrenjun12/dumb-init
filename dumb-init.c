@@ -76,11 +76,15 @@ void forward_signal(int signum) {
 
 /*
  * The dumb-init signal handler.
- * 
+ * 信号处理实现
  * The main job of this signal handler is to forward signals along to our child
+ *  信号处理的主要工作是转发信号给子进程
  * process(es). In setsid mode, this means signaling the entire process group
+ * 在setsid模式下,转发给进程组下所有子进程
  * rooted at our child. In non-setsid mode, this is just signaling the primary
- * child.
+ * 非setsid模式下 信号仅仅转发给主要的子进程
+ * child. 
+   
  *
  * In most cases, simply proxying the received signal is sufficient. If we
  * receive a job control signal, however, we should not only forward it, but
@@ -103,13 +107,14 @@ void handle_signal(int signum) {
     } else if (signum == SIGCHLD) {
         int status, exit_status;
         pid_t killed_pid;
+        // waitpid第一个参数为-1 等待任何一个子进程退出  WNOHANG如果等待子进程没结束 则不阻塞立即返回 返回值为0
         while ((killed_pid = waitpid(-1, &status, WNOHANG)) > 0) {
-            if (WIFEXITED(status)) {
-                exit_status = WEXITSTATUS(status);
+            if (WIFEXITED(status)) {  //WIFEXITED 如果子进程正常结束，它就返回真；否则返回假。
+                exit_status = WEXITSTATUS(status);  // 如果WIFEXITED(status)为真，则可以用该宏取得子进程exit()返回的结束代码
                 DEBUG("A child with PID %d exited with exit status %d.\n", killed_pid, exit_status);
             } else {
-                assert(WIFSIGNALED(status));
-                exit_status = 128 + WTERMSIG(status);
+                assert(WIFSIGNALED(status)); //WIFSIGNALED 如果子进程因为一个未捕获的信号而终止，它就返回真；否则返回假
+                exit_status = 128 + WTERMSIG(status); // 如果WIFSIGNALED(status)为真，则可以用该宏获得导致子进程终止的信号代码
                 DEBUG("A child with PID %d was terminated by signal %d.\n", killed_pid, exit_status - 128);
             }
 
@@ -168,6 +173,9 @@ void print_rewrite_signum_help() {
     exit(1);
 }
 
+/**
+*哪些信号需要重写
+*/
 void parse_rewrite_signum(char *arg) {
     int signum, replacement;
     if (
