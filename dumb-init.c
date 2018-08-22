@@ -34,18 +34,22 @@
 // Signals we care about are numbered from 1 to 31, inclusive.
 // (32 and above are real-time signals.)
 // TODO: this is likely not portable outside of Linux, or on strange architectures
+// 能够处理的最大信号量
 #define MAXSIG 31
 
 // Indices are one-indexed (signal 1 is at index 1). Index zero is unused.
 // User-specified signal rewriting.
+// 信号重写数组
 int signal_rewrite[MAXSIG + 1] = {[0 ... MAXSIG] = -1};
 // One-time ignores due to TTY quirks. 0 = no skip, 1 = skip the next-received signal.
+// 是否忽略信号 0-不忽略，1-忽略
 char signal_temporary_ignores[MAXSIG + 1] = {[0 ... MAXSIG] = 0};
 
+//子进程ID
 pid_t child_pid = -1;
 char debug = 0;
 char use_setsid = 1;
-
+// 根据信号量返回重写新信号
 int translate_signal(int signum) {
     if (signum <= 0 || signum > MAXSIG) {
         return signum;
@@ -59,7 +63,7 @@ int translate_signal(int signum) {
         }
     }
 }
-
+// 信号转发给子进程
 void forward_signal(int signum) {
     signum = translate_signal(signum);
     if (signum != 0) {
@@ -72,7 +76,7 @@ void forward_signal(int signum) {
 
 /*
  * The dumb-init signal handler.
- *
+ * 
  * The main job of this signal handler is to forward signals along to our child
  * process(es). In setsid mode, this means signaling the entire process group
  * rooted at our child. In non-setsid mode, this is just signaling the primary
@@ -124,6 +128,9 @@ void handle_signal(int signum) {
     }
 }
 
+/**
+* 命令行帮助输出 
+*/
 void print_help(char *argv[]) {
     fprintf(stderr,
         "dumb-init v%s"
